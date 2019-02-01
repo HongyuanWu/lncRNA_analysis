@@ -59,23 +59,33 @@ done
 ./stringtie_merge.sh -t stringtie_output reference_genome/ensembl_chok1_genome.gtf
 ```
 
-## Long non-coding RNA identification
+### Long non-coding RNA identification
 
 The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 
-### make a directory for the lncRNA annotation steps
+#### make a directory for the lncRNA annotation steps
 ```bash
 mkdir -p lncrna_annotation
 ```
 
-### FEELNc analysis
+#### FEELNc analysis
 The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 ```bash
 ./run_FEELNc.sh -G reference_genome/ensembl_chok1_genome.gtf -g stringtie_output/stringtie_merged.gtf -f reference_genome/ensembl_chok1_genome.fasta -o lcnrna_annotation/FEELNc
 ```
 
-### CPAT coding prediction for FEELNc candidate lncRNAs
-./run_CPAT  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPAT
+#### CPAT coding prediction for FEELNc candidate lncRNAs
+```bash
+./run_CPAT.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPAT
+```
+#### CPC2 coding prediction for FEELNc candidate lncRNAs
+```bash
+./run_CPC2.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPC2
+```
+
+### 
+
+
 
 
 ### count for DESeq2
