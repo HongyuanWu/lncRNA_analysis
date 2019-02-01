@@ -8,65 +8,84 @@ These scripts replicate the results of the following manuscript
 ## Prerequisites
 TBC
 
+
 # get the ensembl CHOK1 genome and GTF
 ```bash
-././prepare_genome.sh -v 94 -o reference_genome
+./prepare_genome.sh \
+-v 94 \
+-o reference_genome
 ```
 
 #make a STAR index for alignment
 -a = genome fasta file
 -g = anntation file
 -p = processors
+
 ```bash
-./make_star_index.sh -a reference_genome/ensembl_chok1_genome.fa -g reference_genome/ensembl_chok1_genome.gtf -p 32
+./make_star_index.sh \
+-a reference_genome/ensembl_chok1_genome.fa \
+-g reference_genome/ensembl_chok1_genome.gtf \
+-p 32
 ```
+
+### create a list of sample sample_names
+
+ls ../data/raw/ | sed -n 's/\.fastq.gz$//p' | cut -d_ -f1-2 | uniq > ../data/sample_names.txt
 
 ### trim adapter sequences
 ```bash
-./trim_adapter.sh -s REP37_1 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP37_2 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP37_3 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP37_4 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP31_1 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP31_2 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP31_3 -i ../data/raw -o ../data/preprocessed/cutadapt&
-./trim_adapter.sh -s REP31_4 -i ../data/raw -o ../data/preprocessed/cutadapt
+cat ../data/sample_names.txt | while read sample; do
+./trim_adapter.sh \
+-s $sample  -i \
+../data/raw \
+-o ../data/preprocessed/cutadapt&
+done
 ```
 
 ### quality trimming
 ```bash
-./trim_quality.sh -s REP37_1 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP37_2 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP37_3 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP37_4 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP31_1 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP31_2 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP31_3 -i ../data/preprocessed/cutadapt -o../data/preprocessed
-./trim_quality.sh -s REP31_4 -i ../data/preprocessed/cutadapt -o../data/preprocessed
+cat ../data/sample_names.txt | while read sample; do
+./trim_quality.sh \
+-s $sample \
+-i ../data/preprocessed/cutadapt \
+-o../data/preprocessed
+done
 ```
 
 ### map to CHOK1 genome
 ```bash
-./star_mapping.sh -s REP37_1  ../data/preprocessed/paired
-./star_mapping.sh -s REP37_2  ../data/preprocessed/paired
-./star_mapping.sh -s REP37_3  ../data/preprocessed/paired
-./star_mapping.sh -s REP37_4  ../data/preprocessed/paired
-./star_mapping.sh -s REP31_1  ../data/preprocessed/paired
-./star_mapping.sh -s REP31_2  ../data/preprocessed/paired
-./star_mapping.sh -s REP31_3  ../data/preprocessed/paired
-./star_mapping.sh -s REP31_4  ../data/preprocessed/paired
+cat ../data/sample_names.txt | while read sample; do
+./star_mapping.sh \
+-s $sample  \
+-i ../data/preprocessed/paired \
+-g reference_gene/star_index \
+-o mapped \
+-p 32
+done
+```
+
+### string tie assembly
+```bash
+cat ../data/sample_names.txt | while read sample; do
+./stringtie_star.sh \
+-s $sample mapping \
+-i mapped \
+-g reference_genome/ensembl_chok1_genome.gtf \
+-o stringtie_output \
+-p 32
+done
+```
+### merge individual stringtie assemblies and compare to ENSEMBL annotation
+```bash
+./stringtie_merge.sh \
+-t stringtie_output reference_genome/ensembl_chok1_genome.gtf
 ```
 
 ### count for DESeq2
 ```bash
-./htseq_count.sh REP37_1 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP37_2 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP37_3 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP37_4 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP31_1 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP31_2 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP31_3 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
-./htseq_count.sh REP31_4 ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf
+cat ../data/sample_names.txt | while read sample; do
+./htseq_count.sh $sample ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
+done
 ```
 
 ### count for DESeq2
@@ -77,22 +96,9 @@ Rscript rscripts/run_deseq2.R
 
 
 
-### string tie assembly
-```bash
-./stringtie_star.sh REP37_1 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP37_2 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP37_3 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP37_4 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP31_1 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP31_2 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP31_3 mapping reference_genome/ensembl_chok1_genome.gtf
-./stringtie_star.sh REP31_4 mapping reference_genome/ensembl_chok1_genome.gtf
-```
 
-### merge individual stringtie assemblies and compare to ENSEMBL annotation
-```bash
-./stringtie_merge.sh stringtie_output reference_genome/ensembl_chok1_genome.gtf
-```
+
+
 
 
 ./run_TPM.sh REP37_1
