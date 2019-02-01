@@ -59,10 +59,18 @@ done
 ./stringtie_merge.sh -t stringtie_output reference_genome/ensembl_chok1_genome.gtf
 ```
 
+#### calculate TPM expression values
+```bash
+cat ../data/sample_names.txt | while read sample; do
+./run_TPM -s $sample -g  stringtie_output/stringtie_merged.gtf -o lncrna_annotation/TPM -b ../alt_splicing_analysis/mapping/
+done
+```
+
+#aggregate expression for each sample
+./make_TPM_matrix.sh -s ../data/sample_names.txt -o lncrna_annotation/TPM
+
 ### Long non-coding RNA identification
-
 The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
-
 #### make a directory for the lncRNA annotation steps
 ```bash
 mkdir -p lncrna_annotation
@@ -83,15 +91,44 @@ The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 ./run_CPC2.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPC2
 ```
 
-### 
+### Assess FEELNc candiate lncRNAs for the presence of protein domains
+```bash
+./run_CPC2.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPC2
+```
 
+#### Use transdecoder to identify the longest ORF for each candidate lncRNAs
+```bash
+./run_Transdecoder.sh -g  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.gtf -f reference_genome/reference_genome/ensembl_chok1_genome.fa -o lncrna_annotation/transcoder
+```
+#### Use transdecoder to identify the longest ORF for each candidate lncRNAs
+```bash
+./run_HMMscan.sh -t 32 -e 1e-5 -p lncrna_annotation/transdecoder/longest_orfs.pep -o lncrna_annotation/PFAM
+```
 
+### Assess FEELNc candiate lncRNAs for the presence of proteins, miRNAs, and other non-coding RNAs (e.g. snoRNAs) using BLAST
+```bash
+./run_BLAST.sh  -t 32 -e 1e-5 -s lncrna_annotation/SWISSPROT -p lncrna_annotation/transdecoder/longest_orfs.pep -m lncrna_annotation/MIRBASE -r lncrna_annotation/RFAM -l lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta
+```
+#### Filter FEELNc output using additional protein potential calculators, PFAM search and BLAST against protein and RNA databases
 
+```bash
+Rscript rscripts/filter_lncrna.R \
+"lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.gtf" \
+"lncrna_annotation/CPC2/CPC2.analysis.txt" \
+"lncrna_annotation/CPAT/CPAT.analysis.txt" \
+"lncrna_annotation/SWISSPROT/blastp.outfmt6" \
+"lncrna_annotation/MIRBASE/blastn.outfmt6" \
+"lncrna_annotation/PFAM/pfam_domain_transcripts" \
+"lncrna_annotation/RFAM/blastn.outfmt6" \
+"lncrna_annotation/TPM/transcript_tpm_all_samples.tsv" \
+"lncrna_annotation"
+```
 
-### count for DESeq2
+### Differential expression analysis
+
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./htseq_count.sh $sample ../alt_splicing_analysis/mapping/ stringtie_output/rmats_stringtie.gtf&
+./htseq_count.sh -s $sample ../alt_splicing_analysis/mapping/ -g stringtie_output/stringtie_merged.gtf -o htseq_count&
 done
 ```
 
@@ -99,14 +136,3 @@ done
 ```bash
 Rscript rscripts/run_deseq2.R
 ```
-```bash
-cat ../data/sample_names.txt | while read sample; do
-./run_TPM.sh REP37_1
-done
-```
-
-./stringtie_expression_matrix.pl \
---expression_metric=TPM \
---result_dirs='lncrna_annotation/TPM/REP31_1/,lncrna_annotation/TPM/REP31_2/,lncrna_annotation/TPM/REP31_3/,lncrna_annotation/TPM/REP31_4/,lncrna_annotation/TPM/REP37_1/,lncrna_annotation/TPM/REP37_2/,lncrna_annotation/TPM/REP31_3/,lncrna_annotation/TPM/REP31_4/' \
---transcript_matrix_file=lncrna_annotation/TPM/transcript_tpm_all_samples.tsv \
---gene_matrix_file=lncrna_annotation/TPM/gene_tpm_all_samples.tsv
