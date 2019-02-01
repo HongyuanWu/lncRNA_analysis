@@ -1,9 +1,18 @@
-genome_dir="reference_genome"
+#!/usr/bin/env bash
+while getopts a:g:p: option
+  do
+    case "${option}"
+      in
+      a) GTF=${OPTARG};;
+      g) FASTA=${OPTARG};;
+      p) THREADS=${OPTARG};;
+    esac
+done
 
-STAR --runThreadN 16\
+STAR --runThreadN $THREADS\
      --runMode genomeGenerate \
      --sjdbOverhang 124\
      --genomeChrBinNbits 16 \
-     --genomeDir $genome_dir/star_index \
-     --genomeFastaFiles $genome_dir/ensembl_chok1_genome.fa \
-     --sjdbGTFfile $genome_dir/ensembl_chok1_genome.gtf
+     --genomeDir $GENOMEDIR/star_index \
+     --genomeFastaFiles $FASTA \
+     --sjdbGTFfile $GTF

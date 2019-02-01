@@ -1,14 +1,32 @@
 
 #!/usr/bin/env bash
+if (($# == 0)); then
+        echo "Usage:"
+        echo "-s = sample ID"
+        echo "-i = input bam directory"
+        echo "-p = num processors"
+        echo "-g = GTF file"
+        echo "-o = path for output BAMs"
+        exit 2
+fi
+while getopts s:i:p:g:o: option
+  do
+    case "${option}"
+      in
+      s) SAMPLEID=${OPTARG};;
+      i) INDIR=${OPTARG};;
+      p) THREADS=${OPTARG};;
+      g) GTF=${OPTARG};;
+      o) OUTDIR=${OPTARG};;
+    esac
+done
 
-SAMPLEID=$1
-mapped_dir="mapped"
-gtf_file="reference_genome/ensembl_chok1.gtf"
-
-mkdir -p stringtie_output
-output_dir=stringtie_output
+if [ ! -d $OUTDIR ]; then
+mkdir -p $OUTDIR
+fi
 
 stringtie \
--p 32 \
--G $gtf_file \
--o $output_dir/"$SAMPLEID".gtf $mapped_dir/"$SAMPLEID".bam
+-p $THREADS \
+-G $GTF \
+-o $OUTDIR/"$SAMPLEID".gtf \
+$INDIR/"$SAMPLEID".bam

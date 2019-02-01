@@ -1,33 +1,37 @@
-#!/usr/bin/env bash
 
-mkdir lncrna_annotation/CPAT
+#!/usr/bin/env bash
+if (($# == 0)); then
+        echo "Usage:"
+        echo "-f = lncRNA fasta sequence"
+        echo "-o = Output directory"
+        exit 2
+fi
+while getopts f:o: option
+  do
+    case "${option}"
+      in
+      f) LNCRNASEQ=${OPTARG};;
+      o) OUTDIR=${OPTARG};;
+    esac
+done
+
+if [ ! -d $OUTDIR ]; then
+mkdir -p $OUTDIR
+fi
 
 #get mouse CPAT data if needed
-if [ ! -f lncrna_annotation/CPAT/Mouse_logitModel.RDat ]; then
+if [ ! -f $OUTDIR/Mouse_logitModel.RData ]; then
 wget https://ayera.dl.sourceforge.net/project/rna-cpat/v1.2.2/prebuilt_model/Mouse_logitModel.RData \
--P lncrna_annotation/CPAT
+-P $OUTDIR
 fi
 
-if [ ! -f lncrna_annotation/CPAT/Mouse_Hexamer.tsv ]; then
+if [ ! -f $OUTDIR/Mouse_Hexamer.tsv ]; then
 wget https://ayera.dl.sourceforge.net/project/rna-cpat/v1.2.2/prebuilt_model/Mouse_Hexamer.tsv \
--P lncrna_annotation/CPAT
+-P $OUTDIR
 fi
-
-gffread \
--w lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta \
--g reference_genome/ensembl_chok1_genome.fa \
-lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.gtf
 
 cpat.py \
--g lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta \
--o lncrna_annotation/CPAT/CPAT.analysis.txt \
--x lncrna_annotation/CPAT/Mouse_Hexamer.tsv \
--d lncrna_annotation/CPAT/Mouse_logitModel.RData
-
-awk '{if($6 < 0.44){print $1}}' lncrna_annotation/CPAT/CPAT.analysis.txt | \
-tail -n +2 | sort > lncrna_annotation/CPAT/cpat.low_coding_potential
-
-awk '{if($6 >= 0.44){print $1}}' lncrna_annotation/CPAT/CPAT.analysis.txt | \
-tail -n +2 | sort > lncrna_annotation/CPAT/cpat.high_coding_potential
-
-awk '{if($8=="coding"){print $0}}' lncrna_annotation/FEELnc/CPC.CPAT.analysis.txt | wc -l
+-g $LNCRNASEQ \
+-o $OUTDIR/CPAT.analysis.txt \
+-x $OUTDIR/Mouse_Hexamer.tsv \
+-d $OUTDIR/Mouse_logitModel.RData

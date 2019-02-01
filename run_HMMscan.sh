@@ -1,17 +1,45 @@
 #!/usr/bin/env bash
 
-mkdir lncrna_annotation/PFAM
 
-if [ ! -f lncrna_annotation/PFAM/Pfam-A.hmm ]; then
-wget ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz \
--P lncrna_annotation/PFAM
-gunzip lncrna_annotation/PFAM/Pfam-A.hmm.gz
+#!/usr/bin/env bash
+if (($# == 0)); then
+        echo "Usage:"
+        echo "-f = lncRNA fasta sequence"
+        echo "-p = Processor numbers"
+        echo "-e = E-Value threshold"
+        echo "-t = protein protein sequences"
+        echo "-o = Output directory"
+        exit 2
+fi
+while getopts t:e:p:o: option
+  do
+    case "${option}"
+      in
+      p) THREADS=${OPTARG};;
+      e) EVALUE=${OPTARG};;
+      t) PROTEIN=${OPTARG};;
+      o) OUTDIR=${OPTARG};;
+    esac
+done
+
+if [ ! -d $OUTDIR ]; then
+mkdir -p $OUTDIR
 fi
 
-hmmpress lncrna_annotation/PFAM/Pfam-A.hmm
+if [ ! -f $OUTDIR/Pfam-A.hmm ]; then
+wget ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz \
+-P $OUTDIR
+gunzip $OUTDIR/Pfam-A.hmm.gz
+fi
+
+hmmpress $OUTDIR/Pfam-A.hmm
 hmmscan \
---cpu 16 \
--E 1e-5 \
---domtblout lncrna_annotation/PFAM/pfam.domtblout \
-lncrna_annotation/PFAM/Pfam-A.hmm \
-lncrna_annotation/transdecoder/longest_orfs.pep
+--cpu $THREADS \
+-E $EVALUE \
+--domtblout $OUTDIR/pfam.domtblout \
+$OUTDIR/Pfam-A.hmm \
+$PROTEINS
+
+# make a list of ids for filtering from PFAM table
+awk '{print $4}' $OUTDIR/pfam.domtblout | \
+grep -E 'ENS|MSTRG' | uniq | sed 's/.p.*//g' > $OUTDIR/pfam_domain_transcripts
