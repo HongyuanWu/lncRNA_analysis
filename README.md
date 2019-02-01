@@ -5,16 +5,15 @@ These scripts replicate the results of the following manuscript
 ## Installation
 ### Dependancies
 
-## Prerequisites
+## RNASeq read QC, alignment and genome guided transcriptome assembly
 TBC
 
-
-# get the ensembl CHOK1 genome and GTF
+### get the ensembl CHOK1 genome and GTF
 ```bash
 ./prepare_genome.sh -v 94 -o reference_genome
 ```
 
-#make a STAR index for alignment
+###make a STAR index for alignment
 -a = genome fasta file
 -g = anntation file
 -p = processors
@@ -60,6 +59,22 @@ done
 ./stringtie_merge.sh -t stringtie_output reference_genome/ensembl_chok1_genome.gtf
 ```
 
+## Long non-coding RNA identification
+
+The stringtie transcriptome assembly is used to predict lncRNAs
+
+### make a directory for the lncRNA annotation steps
+```bash
+mkdir -p lncrna_annotation
+```
+
+### FEELNc analysis
+./run_FEELNc.sh -G reference_genome/ensembl_chok1_genome.gtf -g stringtie_output/stringtie_merged.gtf -f reference_genome/ensembl_chok1_genome.fasta -o lcnrna_annotation/FEELNc
+
+
+
+
+
 ### count for DESeq2
 ```bash
 cat ../data/sample_names.txt | while read sample; do
@@ -71,24 +86,11 @@ done
 ```bash
 Rscript rscripts/run_deseq2.R
 ```
-
-
-
-
-
-
-
-
-
+```bash
+cat ../data/sample_names.txt | while read sample; do
 ./run_TPM.sh REP37_1
-./run_TPM.sh REP37_2
-./run_TPM.sh REP37_3
-./run_TPM.sh REP37_4
-./run_TPM.sh REP31_1
-./run_TPM.sh REP31_2
-./run_TPM.sh REP31_3
-./run_TPM.sh REP31_4
-
+done
+```
 
 ./stringtie_expression_matrix.pl \
 --expression_metric=TPM \
