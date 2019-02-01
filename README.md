@@ -61,7 +61,7 @@ done
 
 ## Long non-coding RNA identification
 
-The stringtie transcriptome assembly is used to predict lncRNAs
+The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 
 ### make a directory for the lncRNA annotation steps
 ```bash
@@ -69,10 +69,13 @@ mkdir -p lncrna_annotation
 ```
 
 ### FEELNc analysis
+The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
+```bash
 ./run_FEELNc.sh -G reference_genome/ensembl_chok1_genome.gtf -g stringtie_output/stringtie_merged.gtf -f reference_genome/ensembl_chok1_genome.fasta -o lcnrna_annotation/FEELNc
+```
 
-
-
+### CPAT coding prediction for FEELNc candidate lncRNAs
+./run_CPAT  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPAT
 
 
 ### count for DESeq2
