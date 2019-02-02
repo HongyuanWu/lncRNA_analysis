@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-
-
-#!/usr/bin/env bash
 if (($# == 0)); then
         echo "Usage:"
         echo "-f = lncRNA fasta sequence"
