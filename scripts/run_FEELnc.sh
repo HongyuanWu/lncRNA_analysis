@@ -17,7 +17,7 @@ while getopts f:G:g:o: option
       o) OUTDIR=${OPTARG};;
     esac
 done
-
+echo $OUTDIR
 if [ ! -d $OUTDIR ]; then
 mkdir -p $OUTDIR
 fi
