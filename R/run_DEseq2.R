@@ -42,7 +42,7 @@ print(head(as.data.frame(sig_de_results), n = 10))
 print("10 most downregulated genes")
 print(tail(as.data.frame(sig_de_results), n = 10))
 
-write.csv(sig_de_results,file="DESeq2_results/31_v_37.csv", row.names=T)
+  write.csv(sig_de_results,file="DESeq2_results/31_v_37.csv", row.names=T)
 save(list=ls(), file="DESeq2_results/31_v_37.RData")
 save(sig_de_results, file="DESeq2_results/sig_de_results.RData")
 print("DE gene list saved in results folder")

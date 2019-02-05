@@ -44,8 +44,9 @@ FEELnc_codpot.pl \
 -m shuffle \
 -a $OUTDIR/known_mrna.gtf \
 -g $REFSEQ \
--o candidate_lncRNA.nocodpot.gtf
+-o candidate_lncRNA.nocodpot.gtf \
 --outdir $OUTDIR/feelnc_codpot_out/
+
 cp $OUTDIR/feelnc_codpot_out/candidate_lncRNA.nocodpot.gtf $OUTDIR/candidate_lncRNA.nocodpot.gtf
 # classify putative lncRNA transcripts
 FEELnc_classifier.pl \

@@ -10,16 +10,16 @@ TBC
 
 ### get the ensembl CHOK1 genome and GTF
 ```bash
-./prepare_genome.sh -v 94 -o reference_genome
+./scripts/prepare_genome.sh -v 94 -o reference_genome
 ```
 
-###make a STAR index for alignment
+### make a STAR index for alignment
 -a = genome fasta file
 -g = anntation file
 -p = processors
 
 ```bash
-./make_star_index.sh -a reference_genome/ensembl_chok1_genome.fa -g reference_genome/ensembl_chok1_genome.gtf -p 32
+./scripts/make_star_index.sh -a reference_genome/ensembl_chok1_genome.fa -g reference_genome/ensembl_chok1_genome.gtf -p 32
 ```
 
 ### create a list of sample sample_names
@@ -30,46 +30,47 @@ ls ../data/raw/ | sed -n 's/\.fastq.gz$//p' | cut -d_ -f1-2 | uniq > ../data/sam
 ### trim adapter sequences
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./trim_adapter.sh -s $sample  -i ../data/raw -o ../data/preprocessed/cutadapt&
+./scripts/trim_adapter.sh -s $sample  -i ../data/raw -o ../data/preprocessed/cutadapt&
 done
 ```
 
 ### quality trimming
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./trim_quality.sh -s $sample -i ../data/preprocessed/cutadapt -o../data/preprocessed
+./scripts/trim_quality.sh -s $sample -i ../data/preprocessed/cutadapt -o../data/preprocessed
 done
 ```
 
 ### map to CHOK1 genome
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./star_mapping.sh -s $sample -i ../data/preprocessed/paired -g reference_gene/star_index -o mapped -p 32
+./scripts/star_mapping.sh -s $sample -i ../data/preprocessed/paired -g reference_gene/star_index -o mapped -p 32
 done
 ```
 
 ### string tie assembly
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./stringtie_star.sh -s $sample mapping -i mapped -g reference_genome/ensembl_chok1_genome.gtf -o stringtie_output -p 32
+./scripts/stringtie_star.sh -s $sample mapping -i mapped -g reference_genome/ensembl_chok1_genome.gtf -o stringtie_output -p 32
 done
 ```
+
 ### merge individual stringtie assemblies and compare to ENSEMBL annotation
 ```bash
-./stringtie_merge.sh -t stringtie_output reference_genome/ensembl_chok1_genome.gtf
+./scripts/stringtie_merge.sh -t stringtie_output reference_genome/ensembl_chok1_genome.gtf
 ```
 
 #### calculate TPM expression values
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./run_TPM -s $sample -g  stringtie_output/stringtie_merged.gtf -o lncrna_annotation/TPM -b ../alt_splicing_analysis/mapping/
+./scripts/run_TPM.sh -p 32 -s $sample -g stringtie_output/stringtie_merged.gtf -o lncrna_annotation/TPM -b ../alt_splicing_analysis/mapping/
 done
 ```
 
-#aggregate expression for each sample
-./make_TPM_matrix.sh -s ../data/sample_names.txt -o lncrna_annotation/TPM
+####  aggregate expression for each sample
+./scripts/make_TPM_matrix.sh -s ../data/sample_names.txt -o lncrna_annotation/TPM/
 
-### Long non-coding RNA identification
+## Long non-coding RNA identification
 The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 #### make a directory for the lncRNA annotation steps
 ```bash
@@ -79,60 +80,60 @@ mkdir -p lncrna_annotation
 #### FEELNc analysis
 The stringtie transcriptome assembly is used to predict lncRNAs using FEELNc
 ```bash
-./run_FEELNc.sh -G reference_genome/ensembl_chok1_genome.gtf -g stringtie_output/stringtie_merged.gtf -f reference_genome/ensembl_chok1_genome.fasta -o lcnrna_annotation/FEELNc
+./scripts/run_FEELnc.sh -G reference_genome/ensembl_chok1_genome.gtf -g stringtie_output/stringtie_merged.gtf -f reference_genome/ensembl_chok1_genome.fa -o lncrna_annotation/FEELnc
+```
+
+#### Use transdecoder to create a cDNA fasta file identify the longest ORF for each candidate lncRNA
+```bash
+./scripts/run_Transdecoder.sh -g lncrna_annotation/FEELnc/candidate_lncRNA.nocodpot.gtf -f reference_genome/ensembl_chok1_genome.fa -o lncrna_annotation/TRANSDECODER
 ```
 
 #### CPAT coding prediction for FEELNc candidate lncRNAs
 ```bash
-./run_CPAT.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPAT
-```
-#### CPC2 coding prediction for FEELNc candidate lncRNAs
-```bash
-./run_CPC2.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPC2
+./scripts/run_CPAT.sh -f lncrna_annotation/TRANSDECODER/candidate_lncRNA.nocodpot.cdna.fa -o lncrna_annotation/CPAT
 ```
 
-### Assess FEELNc candiate lncRNAs for the presence of protein domains
+#### CPC2 coding prediction for FEELnc candidate lncRNAs
 ```bash
-./run_CPC2.sh  -f  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta -o lncrna_annotation/CPC2
+./scripts/run_CPC2.sh -f lncrna_annotation/TRANSDECODER/candidate_lncRNA.nocodpot.cdna.fa -o lncrna_annotation/CPC2
 ```
 
-#### Use transdecoder to identify the longest ORF for each candidate lncRNAs
+### Assess FEELnc candiate lncRNAs for the presence of protein domains
 ```bash
-./run_Transdecoder.sh -g  lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.gtf -f reference_genome/reference_genome/ensembl_chok1_genome.fa -o lncrna_annotation/transcoder
-```
-#### Use transdecoder to identify the longest ORF for each candidate lncRNAs
-```bash
-./run_HMMscan.sh -t 32 -e 1e-5 -p lncrna_annotation/transdecoder/longest_orfs.pep -o lncrna_annotation/PFAM
+./scripts/run_HMMscan.sh -t 32 -e 1e-5 -p lncrna_annotation/TRANSDECODER/longest_orfs.pep -o lncrna_annotation/PFAM
 ```
 
-### Assess FEELNc candiate lncRNAs for the presence of proteins, miRNAs, and other non-coding RNAs (e.g. snoRNAs) using BLAST
+### Assess FEELnc candiate lncRNAs for the presence of proteins, miRNAs, and other non-coding RNAs (e.g. snoRNAs) using BLAST
 ```bash
-./run_BLAST.sh  -t 32 -e 1e-5 -s lncrna_annotation/SWISSPROT -p lncrna_annotation/transdecoder/longest_orfs.pep -m lncrna_annotation/MIRBASE -r lncrna_annotation/RFAM -l lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.fasta
+./scripts/run_BLAST.sh  -t 32 -e 1e-5 -s lncrna_annotation/SWISSPROT -p lncrna_annotation/TRANSDECODER/longest_orfs.pep -m lncrna_annotation/MIRBASE -r lncrna_annotation/RFAM -n lncrna_annotation/TRANSDECODER/candidate_lncRNA.nocodpot.cdna.fa
 ```
 #### Filter FEELNc output using additional protein potential calculators, PFAM search and BLAST against protein and RNA databases
-
 ```bash
-Rscript rscripts/filter_lncrna.R \
-"lncrna_annotation/FEELnc/feelnc_codpot_out/candidate_lncRNA.gtf.lncRNA.gtf" \
-"lncrna_annotation/CPC2/CPC2.analysis.txt" \
-"lncrna_annotation/CPAT/CPAT.analysis.txt" \
-"lncrna_annotation/SWISSPROT/blastp.outfmt6" \
-"lncrna_annotation/MIRBASE/blastn.outfmt6" \
-"lncrna_annotation/PFAM/pfam_domain_transcripts" \
-"lncrna_annotation/RFAM/blastn.outfmt6" \
-"lncrna_annotation/TPM/transcript_tpm_all_samples.tsv" \
-"lncrna_annotation"
+Rscript R/filter_lncrna.R \
+  "lncrna_annotation/FEELnc/candidate_lncRNA.nocodpot.gtf" \
+  "lncrna_annotation/CPC2/CPC2.analysis.txt" \
+  "lncrna_annotation/CPAT/CPAT.analysis.txt" \
+  "lncrna_annotation/SWISSPROT/blastp.outfmt6" \
+  "lncrna_annotation/MIRBASE/blastn.outfmt6" \
+  "lncrna_annotation/PFAM/pfam_domain_transcripts" \
+  "lncrna_annotation/RFAM/blastn.outfmt6" \
+  "lncrna_annotation/TPM/transcript_tpm_all_samples.tsv" \
+  "lncrna_annotation/FEELnc/lncRNA_classes.txt" \
+  "stringtie_output/stringtie_merged.gtf" \
+  "lncrna_annotation"
 ```
 
-### Differential expression analysis
-
+## Differential expression analysis
 ```bash
 cat ../data/sample_names.txt | while read sample; do
-./htseq_count.sh -s $sample ../alt_splicing_analysis/mapping/ -g stringtie_output/stringtie_merged.gtf -o htseq_count&
+./scripts/htseq_count.sh -s $sample -m ../alt_splicing_analysis/mapping/ -g stringtie_output/stringtie_merged.gtf -o ./htseq_counts&
 done
 ```
 
 ### count for DESeq2
 ```bash
-Rscript rscripts/run_deseq2.R
+Rscript R/run_DEseq2.R \
+  "htseq_counts" \
+  "DESeq2_results" \
+  "lncrna_annotation/lncRNA_filtering.rData"
 ```

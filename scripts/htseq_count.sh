@@ -12,21 +12,17 @@ while getopts s:m:g:o: option
     case "${option}"
       in
       s) SAMPLEID=${OPTARG};;
-      p) STRGTF=${OPTARG};;
-      p) MAPDIR=${OPTARG};;
+      g) STRGTF=${OPTARG};;
+      m) MAPDIR=${OPTARG};;
       o) OUTDIR=${OPTARG};;
     esac
 done
+
+echo $OUTDIR
 
 if [ ! -d $OUTDIR ]; then
 mkdir -p $OUTDIR
 fi
 
-htseq-count \
--r pos \
--f bam \
--i gene_id \
--s reverse \
-$MAPDIR/"$SAMPLEID"Aligned.sortedByCoord.out.bam \
-$STRGTF > $OUTDIR/"$SAMPLEID".counts
+htseq-count -r pos -f bam -i gene_id -s reverse $MAPDIR/"$SAMPLEID"Aligned.sortedByCoord.out.bam $STRGTF > "$OUTDIR"/"$SAMPLEID".counts
 # END

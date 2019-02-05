@@ -15,9 +15,8 @@ while getopts s:o: option
 done
 
 input_directories=$(sed "s|^|$OUTDIR|" $SAMPLELIST | paste -sd ",")
-echo $input_directories
 
-./stringtie_expression_matrix.pl \
+./scripts/stringtie_expression_matrix.pl \
 --expression_metric=TPM \
 --result_dirs=$input_directories \
 --transcript_matrix_file=$OUTDIR/transcript_tpm_all_samples.tsv \
