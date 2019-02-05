@@ -10,7 +10,7 @@ if (($# == 0)); then
         echo "-t = Processor numbers"
         exit 2
 fi
-while getopts r:e:p:n:s:m:t: option
+while getopts r:s:e:p:n:s:m:t: option
   do
     case "${option}"
       in
@@ -46,7 +46,7 @@ blastp \
 -outfmt 6 \
 -evalue $EVALUE \
 -num_threads $THREADS \
-> $SWISSPROTOUTDIR/blastp.outfmt6&
+> $SWISSPROTOUTDIR/blastp.outfmt6
 
 #miRBase
 if [ ! -d $MIRBASEOUTDIR ]; then
@@ -78,7 +78,7 @@ if [ ! -d $RFAMOUTPUTDIR ]; then
 mkdir -p $RFAMOUTPUTDIR
 fi
 
-wget -r ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/ -P $RFAMOUTPUTDIR
+#wget -r ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/fasta_files/ -P $RFAMOUTPUTDIR
 
 
 if [ ! -f $RFAMOUTPUTDIR/rfam_no_lncrna.fasta.hnr ]; then
@@ -87,7 +87,7 @@ fi
 
 blastn \
 -db $RFAMOUTPUTDIR/rfam_no_lncrna.fasta \
--query$NUCLEOTIDE \
+-query $NUCLEOTIDE \
 -strand plus \
 -evalue $EVALUE \
 -num_threads $THREADS \

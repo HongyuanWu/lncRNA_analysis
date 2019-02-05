@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 if (($# == 0)); then
         echo "Usage:"
-        echo "-f = lncRNA fasta sequence"
         echo "-p = Processor numbers"
         echo "-e = E-Value threshold"
         echo "-t = protein protein sequences"
@@ -12,9 +11,9 @@ while getopts t:e:p:o: option
   do
     case "${option}"
       in
-      p) THREADS=${OPTARG};;
+      t) THREADS=${OPTARG};;
       e) EVALUE=${OPTARG};;
-      t) PROTEIN=${OPTARG};;
+      p) PROTEIN=${OPTARG};;
       o) OUTDIR=${OPTARG};;
     esac
 done
@@ -35,7 +34,7 @@ hmmscan \
 -E $EVALUE \
 --domtblout $OUTDIR/pfam.domtblout \
 $OUTDIR/Pfam-A.hmm \
-$PROTEINS
+$PROTEIN
 
 # make a list of ids for filtering from PFAM table
 awk '{print $4}' $OUTDIR/pfam.domtblout | \

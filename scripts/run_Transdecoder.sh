@@ -11,7 +11,7 @@ while getopts f:g:o: option
     case "${option}"
       in
       f) REFSEQ=${OPTARG};;
-      g) FELLNCGTF=${OPTARG};;
+      g) FEELNCGTF=${OPTARG};;
       o) OUTDIR=${OPTARG};;
     esac
 done
@@ -20,11 +20,9 @@ if [ ! -d $OUTDIR ]; then
 mkdir -p $OUTDIR
 fi
 
-~/bin/TransDecoder-TransDecoder-v5.5.0/util/gtf_genome_to_cdna_fasta.pl \
-$FEELNCGTF \
-$REFSEQ \
-> $OUTDIR/candidate_lncRNA.nocodpot.cdna.fa
+~/bin/TransDecoder-TransDecoder-v5.5.0/util/gtf_genome_to_cdna_fasta.pl $FEELNCGTF $REFSEQ > $OUTDIR/candidate_lncRNA.nocodpot.cdna.fa
 
 TransDecoder.LongOrfs \
--t $OUTDIR/candidate_lncRNA.nocodpot.gtf \
+-t $OUTDIR/candidate_lncRNA.nocodpot.cdna.fa \
+-S \
 -O $OUTDIR
